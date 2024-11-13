@@ -1,0 +1,37 @@
+services:
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_PASS: admin
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_VHOST: vhost
+    volumes:
+      - ./docker/rabbitmq/etc/definitions.json:/etc/rabbitmq/definitions.json
+      - ./docker/rabbitmq/etc/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./docker/rabbitmq/data:/var/lib/rabbitmq/mnesia/rabbit@my-rabbit
+      - ./docker/rabbitmq/logs:/var/log/rabbitmq/log
+    ports:
+      - 5672:5672
+      - 15672:15672
+    restart: always
+
+  postgres:
+    container_name: debezium-example-postgres
+    image: quay.io/debezium/example-postgres:2.1
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+
+  debezium:
+    container_name: debezium-server
+    image: quay.io/debezium/server
+    ports:
+      - 8080:8080
+    volumes:
+      - ./docker/debezium:/debezium/config
+    depends_on:
+      - rabbitmq
+      - postgres
