@@ -1,9 +1,11 @@
 import { faker } from '@faker-js/faker'
-import { Controller, Get, Param, Patch, Post } from '@nestjs/common'
+import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq'
+import { Controller, Get, Logger, Param, Patch, Post } from '@nestjs/common'
 import { PrismaService } from './database/prisma.service'
 
 @Controller('users')
 export class AppController {
+  private logger = new Logger('Debezium')
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
@@ -30,5 +32,16 @@ export class AppController {
         email: faker.internet.email().toLowerCase(),
       },
     })
+  }
+
+  @RabbitSubscribe({
+    exchange: 'debezium.exchange',
+    routingKey: 'mydb.public.users',
+    queue: 'debezium.queue',
+  })
+  public async pubSubHandler(data: any) {
+    this.logger.verbose(
+      `Received message:\n ${JSON.stringify(data, null, 2)}\n-----`,
+    )
   }
 }
